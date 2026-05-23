@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     const payload = processWebhookPayload(body);
 
     console.log(`📞 Webhook received: ${payload.event} - Call: ${payload.call_id}`);
+    console.log("📦 Webhook body keys:", Object.keys(body as Record<string, unknown>));
 
     const [existingCall] = await db
       .select()

@@ -127,23 +127,27 @@ export function processWebhookPayload(
 ): WebhookPayload {
   const data = body as Record<string, unknown>;
 
+  // Retell v5 may nest call data under `call` key — try both locations
+  const call = (data.call as Record<string, unknown>) || data;
+  const extract = (key: string) => (call[key] ?? data[key]) as string | undefined;
+
   return {
-    call_id: data.call_id as string,
+    call_id: (extract("call_id") || extract("id") || "").toString(),
     event: data.event as WebhookPayload["event"],
     access_token: data.access_token as string,
-    call_type: (data.call_type as "inbound" | "outbound") || "outbound",
-    from_number: data.from_number as string,
-    to_number: data.to_number as string,
-    direction: (data.direction as "inbound" | "outbound") || "outbound",
-    start_timestamp: data.start_timestamp as number,
-    end_timestamp: data.end_timestamp as number,
-    transcript: data.transcript as string,
+    call_type: ((call.call_type ?? data.call_type) as "inbound" | "outbound") || "outbound",
+    from_number: extract("from_number") || "",
+    to_number: extract("to_number") || "",
+    direction: ((call.direction ?? data.direction) as "inbound" | "outbound") || "outbound",
+    start_timestamp: (call.start_timestamp ?? data.start_timestamp) as number,
+    end_timestamp: (call.end_timestamp ?? data.end_timestamp) as number,
+    transcript: (call.transcript ?? data.transcript) as string,
     transcript_object:
-      data.transcript_object as WebhookPayload["transcript_object"],
-    recording_url: data.recording_url as string,
-    disconnection_reason: data.disconnection_reason as string,
-    call_analysis: data.call_analysis as WebhookPayload["call_analysis"],
+      (call.transcript_object ?? data.transcript_object) as WebhookPayload["transcript_object"],
+    recording_url: (call.recording_url ?? data.recording_url) as string,
+    disconnection_reason: (call.disconnection_reason ?? data.disconnection_reason) as string,
+    call_analysis: (call.call_analysis ?? data.call_analysis) as WebhookPayload["call_analysis"],
     retell_llm_dynamic_variables:
-      data.retell_llm_dynamic_variables as Record<string, string>,
+      (call.retell_llm_dynamic_variables ?? data.retell_llm_dynamic_variables) as Record<string, string>,
   };
 }
