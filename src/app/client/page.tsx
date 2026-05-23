@@ -24,12 +24,12 @@ export default function ClientPage() {
 Obiettivo chiamata: fissare un appuntamento DI PERSONA con Carlos (il titolare).`);
     setInstructions(`TONO: Cordiale, educato, da persona che chiama per aiutare, NON per vendere subito. PARLA con calma, fai UNA domanda alla volta. Non essere invadente.
 
-IL TUO NOME: Marco. Presentati come Marco di Martinez Soluzioni.
+IL TUO NOME: Andrea. Presentati come Andrea di Martinez Soluzioni.
 
 IDENTIFICA IL GENERE DEL CLIENTE: se e uomo usa "Signor", se e donna "Signora". In base al nome o alla voce.
 
 APERTURA (30 secondi, IMPORTANTE: prima conosci, POI proponi):
-"Buongiorno, parlo con il titolare del ristorante? Mi chiamo Marco, chiamo da Martinez Soluzioni. La disturbo?"
+"Buongiorno, parlo con il titolare del ristorante? Mi chiamo Andrea, chiamo da Martinez Soluzioni. La disturbo?"
 → Aspetta risposta.
 → "Guardi, la chiamo perche lavoriamo con diversi ristoranti e ho visto che molti hanno lo stesso problema con la gestione dell'inventario. Volevo solo capire se anche per voi e una cosa che vi porta via tempo. Posso farle una domanda veloce?"
 
@@ -304,11 +304,11 @@ NON PARLARE TROPPO. Ascolta piu di quanto parli. MAI dire subito "ho un'app fant
               </div>
               <div className="flex justify-between">
                 <span>Voce</span>
-                <span className="text-zinc-300">11labs-Marco</span>
+                <span className="text-zinc-300">11labs-Andrea</span>
               </div>
               <div className="flex justify-between">
                 <span>Agente</span>
-                <span className="text-zinc-300">Marco · Outbound</span>
+                <span className="text-zinc-300">Andrea · Outbound</span>
               </div>
               <div className="flex justify-between">
                 <span>Lingua</span>

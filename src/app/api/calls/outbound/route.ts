@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       client_context: context || "",
     };
 
-    const voiceId = process.env.DEFAULT_VOICE_ID || "11labs-Marco";
+    const voiceId = process.env.DEFAULT_VOICE_ID || "11labs-Andrea";
     const lang = lead?.language || "it";
 
     // Step 1: Create and publish agent

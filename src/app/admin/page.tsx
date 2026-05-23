@@ -216,7 +216,7 @@ export default function AdminPage() {
                         }`}
                       >
                         <span className="text-[10px] font-medium text-zinc-500 mr-2">
-                          {isAgent ? "Marco" : "Cliente"}
+                          {isAgent ? "Agente" : "Cliente"}
                         </span>
                         {line.replace(/^(Agent|Agente|User|Customer):\s*/i, "")}
                       </div>
