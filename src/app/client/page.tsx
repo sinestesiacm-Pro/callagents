@@ -140,7 +140,15 @@ NON PARLARE TROPPO. Fai parlare il cliente. Ascolta piu di quanto parli.`);
             <h1 className="text-xl font-bold">Martinez Soluzioni</h1>
             <p className="text-xs text-gray-400">CallAgents · Chiamate Automatiche</p>
           </div>
-          <span className="text-sm text-gray-400">+19129158944</span>
+          <div className="flex items-center gap-4">
+            <a href="/admin" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Admin
+            </a>
+            <a href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Dashboard
+            </a>
+            <span className="text-sm text-gray-500">+19129158944</span>
+          </div>
         </div>
       </header>
 
