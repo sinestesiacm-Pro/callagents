@@ -1,4 +1,6 @@
 import { getRetellClient } from "./client";
+
+export { getRetellClient } from "./client";
 import type { AgentDefinition } from "@/agents/types";
 import { toRetellLanguage } from "./language";
 import type { RetellCallResponse, WebhookPayload } from "./types";

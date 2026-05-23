@@ -4,6 +4,7 @@ import { calls, leads, followUps } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { processWebhookPayload } from "@/retell";
 import type { WebhookPayload } from "@/retell/types";
+import { sendSms } from "@/lib/sms";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,8 +20,31 @@ export async function POST(req: NextRequest) {
       .where(eq(calls.retellCallId, payload.call_id))
       .limit(1);
 
-    if (!existingCall) {
-      console.warn(`Call not found in DB: ${payload.call_id}`);
+    let callRecord = existingCall;
+
+    // Inbound calls arrive without pre-created DB record
+    if (!callRecord) {
+      if (payload.direction === "inbound" || payload.call_type === "inbound") {
+        const [created] = await db
+          .insert(calls)
+          .values({
+            retellCallId: payload.call_id,
+            direction: "inbound",
+            status: "in_progress",
+            agentType: "inbound_sales",
+            fromNumber: payload.from_number,
+            toNumber: payload.to_number,
+            startedAt: payload.start_timestamp
+              ? new Date(payload.start_timestamp)
+              : new Date(),
+          })
+          .returning();
+        callRecord = created || null;
+      }
+    }
+
+    if (!callRecord) {
+      console.warn(`Call not found and not created: ${payload.call_id}`);
       return NextResponse.json({ received: true });
     }
 
@@ -32,7 +56,7 @@ export async function POST(req: NextRequest) {
             status: "in_progress",
             startedAt: new Date(payload.start_timestamp),
           })
-          .where(eq(calls.id, existingCall.id));
+          .where(eq(calls.id, callRecord.id));
         break;
 
       case "call_ended":
@@ -47,17 +71,13 @@ export async function POST(req: NextRequest) {
             disconnectionReason: payload.disconnection_reason,
             recordingUrl: payload.recording_url,
           })
-          .where(eq(calls.id, existingCall.id));
+          .where(eq(calls.id, callRecord.id));
 
-        // Trigger follow-up agent logic
-        await handlePostCallActions(existingCall.id, payload);
-
-        // Update lead last contacted
-        if (existingCall.leadId) {
+        if (callRecord.leadId) {
           await db
             .update(leads)
             .set({ lastContactedAt: new Date(), updatedAt: new Date() })
-            .where(eq(leads.id, existingCall.leadId));
+            .where(eq(leads.id, callRecord.leadId));
         }
         break;
 
@@ -74,8 +94,11 @@ export async function POST(req: NextRequest) {
               sentiment: analysis.user_sentiment,
               analysisData: analysis.custom_analysis_data || {},
             })
-            .where(eq(calls.id, existingCall.id));
+            .where(eq(calls.id, callRecord.id));
         }
+
+        // Transcript arrives HERE — do link detection + SMS now
+        await handlePostCallActions(callRecord.id, payload);
         break;
 
       case "error":
@@ -85,7 +108,7 @@ export async function POST(req: NextRequest) {
             status: "failed",
             disconnectionReason: payload.disconnection_reason || "Webhook error",
           })
-          .where(eq(calls.id, existingCall.id));
+          .where(eq(calls.id, callRecord.id));
         break;
     }
 
@@ -111,10 +134,11 @@ async function handlePostCallActions(
   if (!call) return;
 
   const transcript = (payload.transcript || "").toLowerCase();
-  const summary = payload.call_analysis?.call_summary || "Call completed";
+  const summary = payload.call_analysis?.call_summary || "";
   const sentiment = payload.call_analysis?.user_sentiment || "Neutral";
 
-  // Detect if agent offered to send a link
+  // ── Detect booked appointment ──
+  const appointment = detectAppointment(transcript, summary);
   const shouldSendLink =
     transcript.includes("mando il link") ||
     transcript.includes("ti mando") ||
@@ -122,47 +146,113 @@ async function handlePostCallActions(
     transcript.includes("mando link") ||
     transcript.includes("prova gratuita");
 
-  const followUpType = shouldSendLink ? "sms" : callbackStrategy(sentiment);
-  const followUpContent = shouldSendLink
-    ? `Ciao! Come promesso, ecco il sito di Martinez Soluzioni: https://martinezsoluzioni.com\n\nA presto!`
-    : `Post-call follow-up. Summary: ${summary}. Sentiment: ${sentiment}`;
+  // Prevent double processing
+  const [existingFollowUp] = await db
+    .select()
+    .from(followUps)
+    .where(eq(followUps.callId, call.id))
+    .limit(1);
 
-  // Create immediate follow-up if link was promised
-  const scheduledAt = shouldSendLink
-    ? new Date() // immediately
-    : new Date(Date.now() + 24 * 60 * 60 * 1000); // +24h default
+  if (existingFollowUp) return;
+
+  let followUpType: string;
+  let followUpContent: string;
+  let followUpStatus = "pending";
+  let scheduledAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  if (appointment) {
+    followUpType = "appointment";
+    followUpContent = `APPUNTAMENTO: ${appointment}\n\nRiassunto: ${summary}`;
+    followUpStatus = "pending";
+    scheduledAt = new Date();
+
+    // Update call metadata with appointment info
+    const currentMeta = (call.metadata as Record<string, unknown>) || {};
+    await db
+      .update(calls)
+      .set({
+        metadata: { ...currentMeta, appuntamento: appointment },
+      })
+      .where(eq(calls.id, call.id));
+
+    // Update lead stage if exists
+    if (call.leadId) {
+      await db
+        .update(leads)
+        .set({
+          stage: "demo_scheduled",
+          notes: `Appuntamento: ${appointment}`.trim(),
+          updatedAt: new Date(),
+        })
+        .where(eq(leads.id, call.leadId));
+    }
+
+    console.log("📅 APPUNTAMENTO RILEVATO:", appointment);
+  } else if (shouldSendLink) {
+    followUpType = "sms";
+    followUpContent = `Ciao! Come promesso, ecco il sito: martinezsoluzioni.com - A presto!`;
+    scheduledAt = new Date();
+
+    if (call.toNumber) {
+      try {
+        await sendSms(call.toNumber, followUpContent);
+        followUpStatus = "sent";
+      } catch {
+        followUpStatus = "failed";
+      }
+    }
+  } else {
+    followUpType = callbackStrategy(sentiment);
+    followUpContent = `Post-call follow-up. Summary: ${summary}. Sentiment: ${sentiment}`;
+  }
 
   if (call.leadId) {
     await db.insert(followUps).values({
       callId: call.id,
       leadId: call.leadId,
       type: followUpType,
-      status: shouldSendLink ? "pending" : "pending",
+      status: followUpStatus,
       content: followUpContent,
       scheduledAt,
     });
-  } else {
-    // No leadId: store by phone number if available
-    const phone = call.toNumber || "";
-    if (phone && shouldSendLink) {
-      await db.insert(followUps).values({
-        callId: call.id,
-        type: followUpType,
-        status: "pending",
-        content: followUpContent,
-        scheduledAt,
-      });
-    }
-  }
-
-  // Log to console so user can see it immediately
-  if (shouldSendLink) {
-    console.log("LINK SEND TRIGGERED:", {
-      phone: call.toNumber,
-      content: followUpContent,
+  } else if (appointment || shouldSendLink) {
+    await db.insert(followUps).values({
       callId: call.id,
+      type: followUpType,
+      status: followUpStatus,
+      content: followUpContent,
+      scheduledAt,
     });
   }
+}
+
+function detectAppointment(transcript: string, summary: string): string | null {
+  const text = `${transcript} ${summary}`.toLowerCase();
+
+  const dayPatterns = [
+    "lunedì", "martedì", "mercoledì", "mercoledi",
+    "giovedì", "venerdì", "sabato", "domenica",
+    "domani", "dopodomani",
+  ];
+
+  const foundDay = dayPatterns.find((d) => text.includes(d));
+  if (!foundDay) return null;
+
+  // Look for time nearby: "alle 10", "ore 15", "15:00", "10.30"
+  const timeMatch = text.match(
+    /(?:alle|ore|per le)\s*(\d{1,2})(?::|\.|e\s*)?(\d{2})?/i
+  );
+  const timeStr = timeMatch
+    ? `${timeMatch[1]}${timeMatch[2] ? ":" + timeMatch[2] : ":00"}`
+    : "orario da confermare";
+
+  // Look for email if present
+  const emailMatch = text.match(
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i
+  );
+  const emailStr = emailMatch ? ` | email: ${emailMatch[0]}` : "";
+
+  return `${foundDay} alle ${timeStr}${emailStr}`;
 }
 
 function callbackStrategy(

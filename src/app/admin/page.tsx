@@ -22,11 +22,20 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/calls")
-      .then((r) => r.json())
-      .then((data) => setCalls(data.calls || []))
-      .finally(() => setLoading(false));
+    fetchCalls();
+    const interval = setInterval(fetchCalls, 5000);
+    return () => clearInterval(interval);
   }, []);
+
+  async function fetchCalls() {
+    try {
+      const r = await fetch("/api/admin/calls");
+      const data = await r.json();
+      setCalls(data.calls || []);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) return <div className="p-6 text-white">Caricamento...</div>;
 
