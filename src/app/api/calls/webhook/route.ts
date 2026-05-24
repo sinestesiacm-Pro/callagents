@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { processWebhookPayload } from "@/retell";
 import type { WebhookPayload } from "@/retell/types";
 import { sendSms } from "@/lib/sms";
+import { translateText } from "@/lib/translate";
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,20 +86,34 @@ export async function POST(req: NextRequest) {
       case "call_analyzed":
         if (payload.call_analysis) {
           const analysis = payload.call_analysis;
+          const originalSummary = analysis.call_summary || "";
+
+          // Translate summary to IT and ES
+          const [summaryIt, summaryEs] = await Promise.all([
+            originalSummary ? translateText(originalSummary, "it") : "",
+            originalSummary ? translateText(originalSummary, "es") : "",
+          ]);
+
+          const currentMeta = (callRecord.metadata as Record<string, unknown>) || {};
+
           await db
             .update(calls)
             .set({
               transcript: payload.transcript,
               transcriptJson: payload.transcript_object || null,
               callSuccessful: analysis.call_successful,
-              callSummary: analysis.call_summary,
+              callSummary: originalSummary,
               sentiment: analysis.user_sentiment,
               analysisData: analysis.custom_analysis_data || {},
+              metadata: {
+                ...currentMeta,
+                summaryIt: summaryIt || originalSummary,
+                summaryEs: summaryEs || originalSummary,
+              },
             })
             .where(eq(calls.id, callRecord.id));
         }
 
-        // Transcript arrives HERE — do link detection + SMS now
         await handlePostCallActions(callRecord.id, payload);
         break;
 

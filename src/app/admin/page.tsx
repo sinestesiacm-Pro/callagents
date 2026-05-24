@@ -14,6 +14,7 @@ interface CallRecord {
   transcript: string | null;
   callSummary: string | null;
   analysisData: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   durationMs: number | null;
   createdAt: string;
 }
@@ -196,7 +197,11 @@ export default function AdminPage() {
                       {t(lang, "admin.summary")}
                     </h3>
                     <div className="flex-1 space-y-3 text-sm text-on-surface-variant leading-relaxed">
-                      <p>{selected.callSummary}</p>
+                      <p>
+                        {(selected.metadata as Record<string, string>)?.[
+                          lang === "it" ? "summaryIt" : "summaryEs"
+                        ] || selected.callSummary}
+                      </p>
                     </div>
                   </div>
                 </div>

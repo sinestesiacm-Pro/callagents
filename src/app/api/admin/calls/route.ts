@@ -17,6 +17,7 @@ export async function GET() {
         toNumber: calls.toNumber,
         transcript: calls.transcript,
         callSummary: calls.callSummary,
+        metadata: calls.metadata,
         analysisData: calls.analysisData,
         durationMs: calls.durationMs,
         createdAt: calls.createdAt,
