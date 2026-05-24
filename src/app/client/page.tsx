@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLang } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n";
+import { presets } from "@/lib/presets";
 
 export default function ClientPage() {
   const { lang } = useLang();
@@ -11,30 +12,17 @@ export default function ClientPage() {
   const [instructions, setInstructions] = useState("");
   const [aiQuery, setAiQuery] = useState("");
   const [aiResult, setAiResult] = useState("");
+  const [activePreset, setActivePreset] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "calling" | "success" | "error" | "ai_loading">("idle");
   const [message, setMessage] = useState("");
   const [callId, setCallId] = useState<string | null>(null);
 
-  function applyRestaurantPreset() {
-    setContext(`App inventario per ristoranti e hotel:
-- Basta UNA FOTO alla fattura per registrare tutto automaticamente
-- Controlla cosa hai in magazzino, eviti sprechi e perdite
-- Risparmi TEMPO (niente data entry manuale) E DENARO (meno sprechi, controllo reale)
-
-Obiettivo: fissare appuntamento DI PERSONA con Carlos.`);
-    setInstructions(`IL TUO NOME: Andrea. TONO: Cordiale, educato. PARLA con calma, UNA domanda alla volta.
-
-APERTURA: "Buongiorno, parlo con il titolare? Mi chiamo Andrea di Martinez Soluzioni. La disturbo?" → Aspetta. → "Lavoriamo con ristoranti e molti hanno problemi con l'inventario. Posso farle una domanda veloce?"
-
-DOMANDE (una alla volta):
-1. "Come gestite l'inventario oggi?"
-2. "Quanto tempo vi porta via?"
-3. "Avete mai perso prodotti per mancanza di controllo?"
-
-PRODOTTO (solo dopo le risposte): "Abbiamo un'app dove fa una foto alla fattura e registra tutto in automatico. Carlos, il nostro esperto, puo passare di persona a farle vedere come funziona. Senza impegno."
-
-CHIUSURA: appuntamento DI PERSONA con Carlos.
-EMAIL: pronuncia i NUMERI come cifre ("0204" = "zero due zero quattro"), MAI lettera per lettera.`);
+  function applyPreset(id: string) {
+    const p = presets.find((x) => x.id === id);
+    if (!p) return;
+    setActivePreset(id);
+    setContext(p.context[lang] || p.context.it);
+    setInstructions(p.instructions[lang] || p.instructions.it);
   }
 
   async function handleCall() {
@@ -88,6 +76,29 @@ EMAIL: pronuncia i NUMERI come cifre ("0204" = "zero due zero quattro"), MAI let
             </span>
           </header>
 
+          {/* Preset selector */}
+          <div>
+            <label className="text-xs font-medium text-on-surface-variant block mb-2">
+              {lang === "it" ? "Settore del cliente" : "Sector del cliente"}
+            </label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {presets.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={`flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition-all ${
+                    activePreset === p.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-outline-variant/40 text-on-surface-variant hover:border-primary/30 hover:bg-surface-container-low"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{p.icon}</span>
+                  {p.label[lang]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-on-surface-variant">{t(lang, "client.phone")}</label>
@@ -97,14 +108,6 @@ EMAIL: pronuncia i NUMERI come cifre ("0204" = "zero due zero quattro"), MAI let
                   disabled={status === "calling" || status === "success"}
                   className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 pl-9 pr-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50" />
               </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-on-surface-variant">&nbsp;</label>
-              <button onClick={applyRestaurantPreset}
-                className="flex items-center justify-center gap-2 rounded-full bg-primary-container/20 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary-container/30 transition-colors">
-                <span className="material-symbols-outlined text-[18px]">restaurant</span>
-                {t(lang, "client.preset")}
-              </button>
             </div>
           </div>
 
@@ -118,10 +121,10 @@ EMAIL: pronuncia i NUMERI come cifre ("0204" = "zero due zero quattro"), MAI let
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-on-surface-variant">{t(lang, "client.instructions")}</label>
-            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2}
+            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3}
               disabled={status === "calling" || status === "success"}
               placeholder={t(lang, "client.instructions_placeholder")}
-              className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 px-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50 resize-none" />
+              className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 px-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50 resize-none font-mono text-xs leading-relaxed" />
           </div>
 
           <div className="flex justify-end gap-3">
