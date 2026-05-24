@@ -89,7 +89,7 @@ export default function AdminPage() {
                       : "hover:bg-surface-container-low"
                   }`}>
                   <div className="flex w-full items-start justify-between">
-                    <span className="text-xs font-semibold text-on-surface">{call.toNumber || "Sconosciuto"}</span>
+                    <span className="text-xs font-semibold text-on-surface">{call.toNumber || (lang === "it" ? "Sconosciuto" : "Desconocido")}</span>
                     <span className="text-[10px] text-on-surface-variant">
                       {new Date(call.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
                     </span>
@@ -168,7 +168,7 @@ export default function AdminPage() {
               )}
 
               <div className={`flex flex-col ${selected.callSummary ? "lg:w-2/3" : "w-full"}`}>
-                <div className="flex h-[400px] sm:h-[500px] flex-col rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+                <div className="flex flex-1 min-h-0 flex-col rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
                   <div className="flex items-center justify-between rounded-t-2xl border-b border-outline-variant/20 bg-surface-container/50 px-5 py-3">
                     <h3 className="text-base font-semibold text-on-surface">{t(lang, "admin.transcript")}</h3>
                   </div>

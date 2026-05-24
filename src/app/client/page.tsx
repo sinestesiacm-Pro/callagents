@@ -29,7 +29,7 @@ export default function ClientPage() {
   async function handleCall() {
     if (!phone.trim()) return;
     setStatus("calling");
-    setMessage("Avvio chiamata...");
+    setMessage(lang === "it" ? "Avvio chiamata..." : "Iniciando llamada...");
     try {
       const res = await fetch("/api/calls/outbound", {
         method: "POST",
@@ -37,18 +37,18 @@ export default function ClientPage() {
         body: JSON.stringify({ phone, agentType: "outbound_sales", context: `${context}\n\nISTRUZIONI SPECIALI:\n${instructions}` }),
       });
       const data = await res.json();
-      if (res.ok) { setStatus("success"); setMessage("Chiamata in corso..."); setCallId(data.callId); }
-      else { setStatus("error"); setMessage(data.error || "Errore"); }
-    } catch (e) { setStatus("error"); setMessage(e instanceof Error ? e.message : "Errore di connessione"); }
+      if (res.ok) { setStatus("success"); setMessage(lang === "it" ? "Chiamata in corso..." : "Llamada en curso..."); setCallId(data.callId); }
+      else { setStatus("error"); setMessage(data.error || (lang === "it" ? "Errore" : "Error")); }
+    } catch (e) { setStatus("error"); setMessage(e instanceof Error ? e.message : (lang === "it" ? "Errore di connessione" : "Error de conexión")); }
   }
 
   async function handleHangup() {
     if (!callId) return;
-    setMessage("Chiusura in corso...");
+    setMessage(lang === "it" ? "Chiusura in corso..." : "Colgando...");
     try {
       await fetch("/api/calls/hangup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callId }) });
       setStatus("idle"); setMessage(""); setCallId(null);
-    } catch { setStatus("error"); setMessage("Errore nella chiusura"); }
+    } catch { setStatus("error"); setMessage(lang === "it" ? "Errore nella chiusura" : "Error al colgar"); }
   }
 
   async function handleAiSearch() {
@@ -58,8 +58,8 @@ export default function ClientPage() {
       const res = await fetch("/api/ai/context", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: aiQuery }) });
       const data = await res.json();
       if (res.ok) { setAiResult(data.result); if (!context) setContext(data.result); }
-      else setAiResult("Errore: " + (data.error || "sconosciuto"));
-    } catch (e) { setAiResult("Errore: " + (e instanceof Error ? e.message : "connessione")); }
+      else setAiResult((lang === "it" ? "Errore: " : "Error: ") + (data.error || (lang === "it" ? "sconosciuto" : "desconocido")));
+    } catch (e) { setAiResult((lang === "it" ? "Errore: " : "Error: ") + (e instanceof Error ? e.message : (lang === "it" ? "connessione" : "conexión"))); }
     setStatus("idle");
   }
 

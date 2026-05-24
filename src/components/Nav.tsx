@@ -108,7 +108,7 @@ export default function Nav() {
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/20">
-          <span className="text-lg font-bold text-primary">N-tropy Call</span>
+          <span className="text-sm font-medium text-on-surface-variant">Menu</span>
           <button
             onClick={() => setOpen(false)}
             className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-container-low transition-colors"
