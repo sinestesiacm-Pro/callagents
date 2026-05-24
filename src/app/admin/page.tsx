@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n";
 
 interface CallRecord {
   id: string;
@@ -24,6 +26,7 @@ function parseAppointment(summary: string | null): string | null {
 }
 
 export default function AdminPage() {
+  const { lang } = useLang();
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [selected, setSelected] = useState<CallRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,14 +58,14 @@ export default function AdminPage() {
     );
   });
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Caricamento...</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">{t(lang, "common.loading")}</div>;
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Sidebar */}
       <aside className="flex w-80 shrink-0 flex-col border-r border-outline-variant/20 bg-surface">
         <div className="sticky top-0 z-10 border-b border-outline-variant/20 bg-surface/95 p-4 backdrop-blur">
-          <h2 className="mb-3 text-lg font-semibold text-on-surface">Cronologia</h2>
+          <h2 className="mb-3 text-lg font-semibold text-on-surface">{t(lang, "admin.title")}</h2>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline">
               search
@@ -70,14 +73,14 @@ export default function AdminPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cerca numero o riassunto..."
+              placeholder={t(lang, "admin.search")}
               className="w-full rounded-lg border-none bg-surface-container py-2 pl-10 pr-3 text-sm text-on-surface placeholder:text-outline outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
         </div>
         <div className="flex-1 space-y-1 overflow-y-auto p-2">
           {filtered.length === 0 ? (
-            <p className="p-3 text-xs text-on-surface-variant">Nessuna chiamata</p>
+            <p className="p-3 text-xs text-on-surface-variant">{t(lang, "admin.empty")}</p>
           ) : (
             filtered.map((call) => {
               const appt = parseAppointment(call.callSummary);
@@ -104,7 +107,7 @@ export default function AdminPage() {
                   </div>
                   <div className="flex w-full items-center justify-between">
                     <span className="truncate pr-2 text-[11px] text-on-surface-variant">
-                      {appt ? "Appuntamento" : call.callSummary || "In attesa..."}
+                      {appt ? t(lang, "admin.appointment") : call.callSummary || "..."}
                     </span>
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${
@@ -128,14 +131,14 @@ export default function AdminPage() {
         {!selected ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <span className="material-symbols-outlined mb-4 text-5xl text-outline-variant">description</span>
-            <p className="text-sm text-on-surface-variant">Seleziona una chiamata per vedere la trascrizione</p>
+            <p className="text-sm text-on-surface-variant">{t(lang, "admin.select")}</p>
           </div>
         ) : (
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
             {/* Header */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-on-surface">Dettaglio Chiamata</h1>
+                <h1 className="text-2xl font-bold text-on-surface">{t(lang, "admin.detail")}</h1>
                 <p className="text-sm text-on-surface-variant">
                   {selected.toNumber} ·{" "}
                   {new Date(selected.createdAt).toLocaleString("it-IT")}
@@ -146,23 +149,23 @@ export default function AdminPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {[
-                { label: "Direzione", value: selected.direction, icon: "call_made" },
+                { label: t(lang, "admin.direction"), value: selected.direction, icon: "call_made" },
                 {
-                  label: "Durata",
+                  label: t(lang, "admin.duration"),
                   value: selected.durationMs
                     ? `${Math.round(selected.durationMs / 1000)}s`
                     : "N/A",
                   icon: "schedule",
                 },
                 {
-                  label: "Sentiment",
+                  label: t(lang, "admin.sentiment"),
                   value: selected.sentiment || "N/A",
                   icon: "sentiment_satisfied",
                   color: selected.sentiment === "Positive" ? "text-green-600" : undefined,
                 },
-                { label: "Stato", value: selected.status, icon: "check_circle" },
+                { label: t(lang, "admin.status"), value: selected.status, icon: "check_circle" },
                 {
-                  label: "Data",
+                  label: t(lang, "admin.date"),
                   value: new Date(selected.createdAt).toLocaleDateString("it-IT"),
                   icon: "calendar_today",
                 },
@@ -190,7 +193,7 @@ export default function AdminPage() {
                   <div className="flex h-full flex-col gap-4 rounded-2xl border border-primary/10 bg-surface-container-lowest/80 p-5 backdrop-blur-sm shadow-sm">
                     <h3 className="flex items-center gap-2 text-base font-semibold text-on-surface">
                       <span className="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
-                      Sintesi AI
+                      {t(lang, "admin.summary")}
                     </h3>
                     <div className="flex-1 space-y-3 text-sm text-on-surface-variant leading-relaxed">
                       <p>{selected.callSummary}</p>
@@ -203,7 +206,7 @@ export default function AdminPage() {
               <div className="flex flex-col lg:col-span-2">
                 <div className="flex h-[500px] flex-col rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
                   <div className="flex items-center justify-between rounded-t-2xl border-b border-outline-variant/20 bg-surface-container/50 px-5 py-3">
-                    <h3 className="text-base font-semibold text-on-surface">Trascrizione</h3>
+                    <h3 className="text-base font-semibold text-on-surface">{t(lang, "admin.transcript")}</h3>
                   </div>
                   {selected.transcript ? (
                     <div className="flex-1 space-y-5 overflow-y-auto p-5">
@@ -224,11 +227,11 @@ export default function AdminPage() {
                               {isAgent ? (
                                 <>
                                   <span className="material-symbols-outlined text-[14px]">support_agent</span>
-                                  <span>Agente</span>
+                                  <span>{t(lang, "admin.agent")}</span>
                                 </>
                               ) : (
                                 <>
-                                  <span>Cliente</span>
+                                  <span>{t(lang, "admin.client")}</span>
                                   <span className="material-symbols-outlined text-[14px]">person</span>
                                 </>
                               )}
@@ -248,11 +251,11 @@ export default function AdminPage() {
                     </div>
                   ) : selected.status === "completed" ? (
                     <div className="flex flex-1 items-center justify-center">
-                      <p className="text-sm text-on-surface-variant">Trascrizione in elaborazione...</p>
+                      <p className="text-sm text-on-surface-variant">{t(lang, "admin.processing")}</p>
                     </div>
                   ) : (
                     <div className="flex flex-1 items-center justify-center">
-                      <p className="text-sm text-on-surface-variant">Chiamata in corso. La trascrizione apparirà qui.</p>
+                      <p className="text-sm text-on-surface-variant">{t(lang, "admin.in_progress")}</p>
                     </div>
                   )}
                 </div>

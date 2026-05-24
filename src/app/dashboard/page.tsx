@@ -5,6 +5,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
+import { useLang } from "@/components/LanguageProvider";
+import { t } from "@/lib/i18n";
 
 interface DashboardData {
   metrics: { totalLeads: number; totalCalls: number; completedCalls: number; failedCalls: number; successRate: number; positiveSentimentRate: number };
@@ -15,6 +17,7 @@ interface DashboardData {
 const PIE_COLORS = ["#005ab4", "#465f88", "#e0e2eb"];
 
 export default function DashboardPage() {
+  const { lang } = useLang();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,8 +28,8 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Caricamento...</div>;
-  if (!data) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Nessun dato</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">{t(lang, "common.loading")}</div>;
+  if (!data) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">{t(lang, "dashboard.no_data")}</div>;
 
   const { metrics } = data;
 
@@ -46,18 +49,18 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Dashboard Analitica</h1>
-          <p className="text-sm text-on-surface-variant">Panoramica delle performance e analisi delle chiamate.</p>
+          <h1 className="text-2xl font-bold text-on-surface">{t(lang, "dashboard.title")}</h1>
+          <p className="text-sm text-on-surface-variant">{t(lang, "dashboard.subtitle")}</p>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Lead Totali", value: metrics.totalLeads, icon: "group", bg: "bg-primary-container/30 text-primary" },
-          { label: "Chiamate Gestite", value: metrics.totalCalls, icon: "call", bg: "bg-secondary-container/60 text-on-secondary-container" },
-          { label: "Tasso di Successo", value: `${metrics.successRate}%`, icon: "check_circle", bg: "bg-surface-variant text-tertiary" },
-          { label: "Sentiment Positivo", value: `${metrics.positiveSentimentRate}%`, icon: "mood", bg: "bg-surface-container-high text-on-surface-variant" },
+          { label: t(lang, "dashboard.leads"), value: metrics.totalLeads, icon: "group", bg: "bg-primary-container/30 text-primary" },
+          { label: t(lang, "dashboard.calls"), value: metrics.totalCalls, icon: "call", bg: "bg-secondary-container/60 text-on-secondary-container" },
+          { label: t(lang, "dashboard.success"), value: `${metrics.successRate}%`, icon: "check_circle", bg: "bg-surface-variant text-tertiary" },
+          { label: t(lang, "dashboard.sentiment_pos"), value: `${metrics.positiveSentimentRate}%`, icon: "mood", bg: "bg-surface-container-high text-on-surface-variant" },
         ].map((m) => (
           <div key={m.label} className="flex flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="mb-4 flex items-start justify-between">
@@ -76,7 +79,7 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm lg:col-span-2">
-          <h3 className="text-base font-semibold text-on-surface">Pipeline Lead</h3>
+          <h3 className="text-base font-semibold text-on-surface">{t(lang, "dashboard.pipeline")}</h3>
           {stageData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={stageData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -101,12 +104,12 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-[250px] items-center justify-center text-xs text-on-surface-variant">Nessun dato</div>
+            <div className="flex h-[250px] items-center justify-center text-xs text-on-surface-variant">{t(lang, "dashboard.no_data")}</div>
           )}
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm">
-          <h3 className="w-full text-base font-semibold text-on-surface">Sentiment</h3>
+          <h3 className="w-full text-base font-semibold text-on-surface">{t(lang, "dashboard.sentiment_chart")}</h3>
           {sentimentData.reduce((a, b) => a + b.value, 0) > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={180}>
@@ -123,13 +126,15 @@ export default function DashboardPage() {
                 {sentimentData.map((s, i) => (
                   <div key={s.name} className="flex items-center gap-1.5 text-xs">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: PIE_COLORS[i] }} />
-                    <span className="text-on-surface">{s.name}</span>
+                    <span className="text-on-surface">
+                      {s.name === "Positivo" ? t(lang, "dashboard.positive") : s.name === "Neutro" ? t(lang, "dashboard.neutral") : t(lang, "dashboard.negative")}
+                    </span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="flex h-[180px] items-center justify-center text-xs text-on-surface-variant">Nessun dato</div>
+            <div className="flex h-[180px] items-center justify-center text-xs text-on-surface-variant">{t(lang, "dashboard.no_data")}</div>
           )}
         </div>
       </div>
@@ -137,7 +142,7 @@ export default function DashboardPage() {
       {/* Recent Calls */}
       <div className="overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
         <div className="flex items-center justify-between border-b border-outline-variant/20 bg-surface-container-lowest px-6 py-4">
-          <h3 className="text-base font-semibold text-on-surface">Chiamate Recenti</h3>
+          <h3 className="text-base font-semibold text-on-surface">{t(lang, "dashboard.recent")}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -152,7 +157,7 @@ export default function DashboardPage() {
             </thead>
             <tbody className="text-on-surface">
               {data.recentCalls.length === 0 ? (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-on-surface-variant">Nessuna chiamata</td></tr>
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-on-surface-variant">{t(lang, "dashboard.no_calls")}</td></tr>
               ) : (
                 data.recentCalls.map((call) => (
                   <tr key={call.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low/50 transition-colors">
