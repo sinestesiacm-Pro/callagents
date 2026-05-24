@@ -16,10 +16,18 @@ interface CallRecord {
   createdAt: string;
 }
 
+function parseAppointment(summary: string | null): string | null {
+  if (!summary) return null;
+  const lower = summary.toLowerCase();
+  if (lower.includes("appuntamento") || lower.includes("scheduled") || lower.includes("agreed to")) return summary;
+  return null;
+}
+
 export default function AdminPage() {
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [selected, setSelected] = useState<CallRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchCalls();
@@ -32,242 +40,227 @@ export default function AdminPage() {
       const r = await fetch("/api/admin/calls");
       const data = await r.json();
       setCalls(data.calls || []);
+      if (data.calls?.length && !selected) setSelected(data.calls[0]);
     } finally {
       setLoading(false);
     }
   }
 
-  function parseAppointment(summary: string | null): string | null {
-    if (!summary) return null;
-    const lower = summary.toLowerCase();
-    if (
-      lower.includes("appuntamento") ||
-      lower.includes("scheduled") ||
-      lower.includes("agreed to")
-    ) {
-      return summary;
-    }
-    return null;
-  }
-
-  if (loading)
+  const filtered = calls.filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
     return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Caricamento...
-      </div>
+      (c.toNumber && c.toNumber.includes(q)) ||
+      (c.callSummary && c.callSummary.toLowerCase().includes(q))
     );
+  });
+
+  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Caricamento...</div>;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-3rem)] max-w-7xl">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-72 border-r border-white/[0.06] bg-white/[0.01] p-4 overflow-y-auto shrink-0">
-        <h2 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3 px-1">
-          Chiamate recenti
-        </h2>
-        {calls.length === 0 ? (
-          <p className="text-xs text-zinc-600 px-1">Nessuna chiamata</p>
-        ) : (
-          <div className="space-y-1">
-            {calls.map((call) => {
+      <aside className="flex w-80 shrink-0 flex-col border-r border-outline-variant/20 bg-surface">
+        <div className="sticky top-0 z-10 border-b border-outline-variant/20 bg-surface/95 p-4 backdrop-blur">
+          <h2 className="mb-3 text-lg font-semibold text-on-surface">Cronologia</h2>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline">
+              search
+            </span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cerca numero o riassunto..."
+              className="w-full rounded-lg border-none bg-surface-container py-2 pl-10 pr-3 text-sm text-on-surface placeholder:text-outline outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+        <div className="flex-1 space-y-1 overflow-y-auto p-2">
+          {filtered.length === 0 ? (
+            <p className="p-3 text-xs text-on-surface-variant">Nessuna chiamata</p>
+          ) : (
+            filtered.map((call) => {
               const appt = parseAppointment(call.callSummary);
               return (
                 <button
                   key={call.id}
                   onClick={() => setSelected(call)}
-                  className={`w-full text-left p-3 rounded-xl text-xs transition-all ${
+                  className={`flex w-full flex-col rounded-lg p-3 text-left transition-colors ${
                     selected?.id === call.id
-                      ? "bg-white/[0.06] border border-white/[0.1]"
-                      : "border border-transparent hover:bg-white/[0.03]"
+                      ? "border border-primary/20 bg-primary-container/10"
+                      : "hover:bg-surface-container-low"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        call.status === "completed"
-                          ? "bg-emerald-500"
-                          : call.status === "failed"
-                            ? "bg-red-500"
-                            : "bg-amber-500"
-                      }`}
-                    />
-                    <span className="text-[10px] text-zinc-600">
+                  <div className="flex w-full items-start justify-between">
+                    <span className="text-xs font-semibold text-on-surface">
+                      {call.toNumber || "Sconosciuto"}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant">
                       {new Date(call.createdAt).toLocaleTimeString("it-IT", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </span>
                   </div>
-                  <p className="font-mono text-[11px] mt-1.5 text-zinc-500">
-                    {call.toNumber || "Sconosciuto"}
-                  </p>
-                  {appt ? (
-                    <p className="text-[11px] mt-1 text-emerald-400/80 line-clamp-2">
-                      Appuntamento
-                    </p>
-                  ) : (
-                    <p className="text-[11px] mt-1 text-zinc-400 line-clamp-2">
-                      {call.callSummary || "In attesa..."}
-                    </p>
-                  )}
-                  {call.sentiment && (
-                    <span
-                      className={`text-[10px] mt-1 inline-block ${
-                        call.sentiment === "Positive"
-                          ? "text-emerald-500"
-                          : call.sentiment === "Negative"
-                            ? "text-red-400"
-                            : "text-zinc-500"
-                      }`}
-                    >
-                      {call.sentiment}
+                  <div className="flex w-full items-center justify-between">
+                    <span className="truncate pr-2 text-[11px] text-on-surface-variant">
+                      {appt ? "Appuntamento" : call.callSummary || "In attesa..."}
                     </span>
-                  )}
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${
+                        call.status === "completed"
+                          ? "bg-green-500"
+                          : call.status === "failed"
+                            ? "bg-red-500"
+                            : "bg-yellow-500"
+                      }`}
+                    />
+                  </div>
                 </button>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 p-8 overflow-y-auto">
+      {/* Main */}
+      <main className="flex-1 overflow-y-auto bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-6 md:p-8">
         {!selected ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="h-10 w-10 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
-              <svg
-                className="h-5 w-5 text-zinc-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm text-zinc-500">
-              Seleziona una chiamata per vedere i dettagli
-            </p>
-            <p className="text-xs text-zinc-600 mt-1">
-              Le chiamate appaiono qui in tempo reale
-            </p>
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <span className="material-symbols-outlined mb-4 text-5xl text-outline-variant">description</span>
+            <p className="text-sm text-on-surface-variant">Seleziona una chiamata per vedere la trascrizione</p>
           </div>
         ) : (
-          <div className="max-w-3xl space-y-6 animate-in fade-in">
+          <div className="mx-auto flex max-w-5xl flex-col gap-6">
             {/* Header */}
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">
-                Dettagli Chiamata
-              </h2>
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <Stat
-                  label="Stato"
-                  value={selected.status}
-                  color={selected.status === "completed" ? "emerald" : selected.status === "failed" ? "red" : "amber"}
-                />
-                <Stat label="Direzione" value={selected.direction} />
-                <Stat label="Sentiment" value={selected.sentiment || "N/A"} />
-                <Stat
-                  label="Durata"
-                  value={
-                    selected.durationMs
-                      ? `${Math.round(selected.durationMs / 1000)}s`
-                      : "N/A"
-                  }
-                />
-                <Stat label="Data" value={new Date(selected.createdAt).toLocaleDateString("it-IT")} />
-                <Stat label="Numero" value={selected.toNumber || "N/A"} mono />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-on-surface">Dettaglio Chiamata</h1>
+                <p className="text-sm text-on-surface-variant">
+                  {selected.toNumber} ·{" "}
+                  {new Date(selected.createdAt).toLocaleString("it-IT")}
+                </p>
               </div>
             </div>
 
-            {/* Summary */}
-            {selected.callSummary ? (
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                  Riassunto
-                </h3>
-                <p className="text-sm text-zinc-300 leading-relaxed">
-                  {selected.callSummary}
-                </p>
-              </div>
-            ) : null}
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {[
+                { label: "Direzione", value: selected.direction, icon: "call_made" },
+                {
+                  label: "Durata",
+                  value: selected.durationMs
+                    ? `${Math.round(selected.durationMs / 1000)}s`
+                    : "N/A",
+                  icon: "schedule",
+                },
+                {
+                  label: "Sentiment",
+                  value: selected.sentiment || "N/A",
+                  icon: "sentiment_satisfied",
+                  color: selected.sentiment === "Positive" ? "text-green-600" : undefined,
+                },
+                { label: "Stato", value: selected.status, icon: "check_circle" },
+                {
+                  label: "Data",
+                  value: new Date(selected.createdAt).toLocaleDateString("it-IT"),
+                  icon: "calendar_today",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex flex-col gap-1 rounded-xl border border-outline-variant/20 bg-surface-container-lowest/70 p-4 backdrop-blur-sm shadow-sm"
+                >
+                  <span className="flex items-center gap-1 text-xs text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[14px]">{stat.icon}</span>
+                    {stat.label}
+                  </span>
+                  <span className={`text-sm font-semibold text-on-surface ${stat.color || ""}`}>
+                    {stat.value}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-            {/* Transcript */}
-            {selected.transcript ? (
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">
-                  Trascrizione
-                </h3>
-                <div className="space-y-2 max-h-[32rem] overflow-y-auto">
-                  {selected.transcript.split("\n").map((line, i) => {
-                    const isAgent =
-                      line.startsWith("Agent:") ||
-                      line.startsWith("Agente:");
-                    return (
-                      <div
-                        key={i}
-                        className={`px-4 py-2.5 rounded-xl text-sm leading-relaxed ${
-                          isAgent
-                            ? "bg-blue-500/[0.06] border border-blue-500/[0.1] text-blue-200/90"
-                            : "bg-white/[0.02] border border-white/[0.04] text-zinc-300"
-                        }`}
-                      >
-                        <span className="text-[10px] font-medium text-zinc-500 mr-2">
-                          {isAgent ? "Agente" : "Cliente"}
-                        </span>
-                        {line.replace(/^(Agent|Agente|User|Customer):\s*/i, "")}
-                      </div>
-                    );
-                  })}
+            {/* Content grid */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Summary */}
+              {selected.callSummary && (
+                <div className="flex flex-col gap-4 lg:col-span-1">
+                  <div className="flex h-full flex-col gap-4 rounded-2xl border border-primary/10 bg-surface-container-lowest/80 p-5 backdrop-blur-sm shadow-sm">
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-on-surface">
+                      <span className="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
+                      Sintesi AI
+                    </h3>
+                    <div className="flex-1 space-y-3 text-sm text-on-surface-variant leading-relaxed">
+                      <p>{selected.callSummary}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transcript */}
+              <div className="flex flex-col lg:col-span-2">
+                <div className="flex h-[500px] flex-col rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+                  <div className="flex items-center justify-between rounded-t-2xl border-b border-outline-variant/20 bg-surface-container/50 px-5 py-3">
+                    <h3 className="text-base font-semibold text-on-surface">Trascrizione</h3>
+                  </div>
+                  {selected.transcript ? (
+                    <div className="flex-1 space-y-5 overflow-y-auto p-5">
+                      {selected.transcript.split("\n").map((line, i) => {
+                        const isAgent = line.startsWith("Agent:") || line.startsWith("Agente:");
+                        return (
+                          <div
+                            key={i}
+                            className={`flex flex-col gap-1 max-w-[85%] ${
+                              isAgent ? "mr-auto" : "ml-auto items-end"
+                            }`}
+                          >
+                            <div
+                              className={`flex items-center gap-2 text-xs text-on-surface-variant ${
+                                isAgent ? "ml-1" : "mr-1"
+                              }`}
+                            >
+                              {isAgent ? (
+                                <>
+                                  <span className="material-symbols-outlined text-[14px]">support_agent</span>
+                                  <span>Agente</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Cliente</span>
+                                  <span className="material-symbols-outlined text-[14px]">person</span>
+                                </>
+                              )}
+                            </div>
+                            <div
+                              className={`rounded-2xl p-4 text-sm leading-relaxed ${
+                                isAgent
+                                  ? "rounded-tl-sm bg-surface-container-high text-on-surface shadow-sm"
+                                  : "rounded-tr-sm bg-primary text-on-primary shadow-md"
+                              }`}
+                            >
+                              {line.replace(/^(Agent|Agente|User|Customer):\s*/i, "")}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : selected.status === "completed" ? (
+                    <div className="flex flex-1 items-center justify-center">
+                      <p className="text-sm text-on-surface-variant">Trascrizione in elaborazione...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center">
+                      <p className="text-sm text-on-surface-variant">Chiamata in corso. La trascrizione apparirà qui.</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : selected.status === "completed" ? (
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 text-center">
-                <p className="text-sm text-zinc-500">
-                  Trascrizione in elaborazione...
-                </p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  Retell sta processando la chiamata. Ricarica tra qualche
-                  secondo.
-                </p>
-              </div>
-            ) : null}
+            </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  color,
-  mono,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-  mono?: boolean;
-}) {
-  const colorMap: Record<string, string> = {
-    emerald: "text-emerald-400",
-    red: "text-red-400",
-    amber: "text-amber-400",
-  };
-  return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-        {label}
-      </p>
-      <p
-        className={`mt-1 text-sm ${mono ? "font-mono" : ""} ${color ? colorMap[color] || "text-zinc-300" : "text-zinc-300"}`}
-      >
-        {value}
-      </p>
+      </main>
     </div>
   );
 }

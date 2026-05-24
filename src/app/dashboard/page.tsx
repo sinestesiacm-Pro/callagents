@@ -2,39 +2,17 @@
 
 import { useEffect, useState } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from "recharts";
 
 interface DashboardData {
-  metrics: {
-    totalLeads: number;
-    totalCalls: number;
-    completedCalls: number;
-    failedCalls: number;
-    successRate: number;
-    positiveSentimentRate: number;
-  };
+  metrics: { totalLeads: number; totalCalls: number; completedCalls: number; failedCalls: number; successRate: number; positiveSentimentRate: number };
   leadStages: { stage: string; count: number }[];
-  recentCalls: {
-    id: string;
-    direction: string;
-    status: string;
-    sentiment: string | null;
-    durationMs: number | null;
-    createdAt: string;
-  }[];
+  recentCalls: { id: string; direction: string; status: string; sentiment: string | null; durationMs: number | null; createdAt: string }[];
 }
 
-const COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b"];
+const PIE_COLORS = ["#005ab4", "#465f88", "#e0e2eb"];
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -43,247 +21,167 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch("/api/dashboard")
       .then((r) => r.json())
-      .then((json) => {
-        if (json.metrics) setData(json);
-      })
+      .then((json) => { if (json.metrics) setData(json); })
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Caricamento...
-      </div>
-    );
-
-  if (!data)
-    return (
-      <div className="flex items-center justify-center h-64 text-sm text-zinc-500">
-        Nessun dato disponibile
-      </div>
-    );
+  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Caricamento...</div>;
+  if (!data) return <div className="flex items-center justify-center h-64 text-sm text-on-surface-variant">Nessun dato</div>;
 
   const { metrics } = data;
 
+  const stageData = data.leadStages.filter((s) => s.count > 0).map((s) => ({
+    name: s.stage.replace(/_/g, " "),
+    value: s.count,
+  }));
+
   const sentimentData = [
-    { name: "Positive", value: data.leadStages.filter((s) => s.stage === "demo_scheduled" || s.stage === "closed_won").reduce((a, b) => a + b.count, 0) || metrics.positiveSentimentRate },
-    { name: "Negative", value: data.leadStages.filter((s) => s.stage === "closed_lost" || s.stage === "unqualified").reduce((a, b) => a + b.count, 0) },
-    { name: "Pending", value: data.leadStages.filter((s) => s.stage === "new" || s.stage === "contacted" || s.stage === "qualified").reduce((a, b) => a + b.count, 0) },
+    { name: "Positivo", value: data.recentCalls.filter((c) => c.sentiment === "Positive").length || metrics.positiveSentimentRate },
+    { name: "Neutro", value: data.recentCalls.filter((c) => c.sentiment === "Neutral").length },
+    { name: "Negativo", value: data.recentCalls.filter((c) => c.sentiment === "Negative").length },
   ];
 
-  const stageData = data.leadStages
-    .filter((s) => s.count > 0)
-    .map((s) => ({
-      name: s.stage.replace(/_/g, " "),
-      value: s.count,
-    }));
-
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Analisi</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Panoramica delle chiamate e della pipeline.
-        </p>
+    <div className="mx-auto flex max-w-7xl flex-col gap-8 p-margin-desktop">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface">Dashboard Analitica</h1>
+          <p className="text-sm text-on-surface-variant">Panoramica delle performance e analisi delle chiamate.</p>
+        </div>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <MetricCard label="Lead Totali" value={metrics.totalLeads} />
-        <MetricCard label="Chiamate" value={metrics.totalCalls} />
-        <MetricCard label="Tasso Successo" value={`${metrics.successRate}%`} accent />
-        <MetricCard label="Sentiment +" value={`${metrics.positiveSentimentRate}%`} accent />
+      {/* Metrics */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Lead Totali", value: metrics.totalLeads, icon: "group", bg: "bg-primary-container/30 text-primary" },
+          { label: "Chiamate Gestite", value: metrics.totalCalls, icon: "call", bg: "bg-secondary-container/60 text-on-secondary-container" },
+          { label: "Tasso di Successo", value: `${metrics.successRate}%`, icon: "check_circle", bg: "bg-surface-variant text-tertiary" },
+          { label: "Sentiment Positivo", value: `${metrics.positiveSentimentRate}%`, icon: "mood", bg: "bg-surface-container-high text-on-surface-variant" },
+        ].map((m) => (
+          <div key={m.label} className="flex flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="mb-4 flex items-start justify-between">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.bg}`}>
+                <span className="material-symbols-outlined text-[20px]">{m.icon}</span>
+              </span>
+            </div>
+            <div>
+              <p className="text-xs text-on-surface-variant">{m.label}</p>
+              <p className="mt-1 text-2xl font-bold text-on-surface">{m.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">
-            Pipeline Lead
-          </h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="flex flex-col gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm lg:col-span-2">
+          <h3 className="text-base font-semibold text-on-surface">Pipeline Lead</h3>
           {stageData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={stageData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10, fill: "#71717a" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#71717a" }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e2eb" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#717785" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#717785" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "#18181b",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "#ffffff",
+                    border: "1px solid #e0e2eb",
                     borderRadius: "12px",
-                    fontSize: "12px",
-                    color: "#d4d4d8",
+                    fontSize: "13px",
+                    color: "#181c22",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                   }}
                 />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="url(#barGrad)" />
-                <defs>
-                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#8b5cf6" />
-                  </linearGradient>
-                </defs>
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {stageData.map((_, i) => (
+                    <Cell key={i} fill={`hsl(${220 + i * 20}, 70%, ${55 - i * 5}%)`} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[250px] flex items-center justify-center text-xs text-zinc-600">
-              Nessun lead nella pipeline
-            </div>
+            <div className="flex h-[250px] items-center justify-center text-xs text-on-surface-variant">Nessun dato</div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">
-            Sentiment
-          </h3>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm">
+          <h3 className="w-full text-base font-semibold text-on-surface">Sentiment</h3>
           {sentimentData.reduce((a, b) => a + b.value, 0) > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={sentimentData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {sentimentData.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={COLORS[i % COLORS.length]}
-                      stroke="transparent"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "#18181b",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                    color: "#d4d4d8",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={sentimentData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" stroke="none">
+                    {sentimentData.map((_, i) => (<Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: "#fff", border: "1px solid #e0e2eb", borderRadius: "10px", fontSize: "12px", color: "#181c22" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex gap-4">
+                {sentimentData.map((s, i) => (
+                  <div key={s.name} className="flex items-center gap-1.5 text-xs">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: PIE_COLORS[i] }} />
+                    <span className="text-on-surface">{s.name}</span>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="h-[250px] flex items-center justify-center text-xs text-zinc-600">
-              Nessun dato sentiment
-            </div>
+            <div className="flex h-[180px] items-center justify-center text-xs text-on-surface-variant">Nessun dato</div>
           )}
         </div>
       </div>
 
-      {/* Recent calls table */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-        <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">
-          Chiamate Recenti
-        </h3>
-        {data.recentCalls.length === 0 ? (
-          <p className="text-xs text-zinc-600">Nessuna chiamata</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-zinc-500 border-b border-white/[0.06]">
-                  <th className="text-left py-3 px-3 font-medium">Direzione</th>
-                  <th className="text-left py-3 px-3 font-medium">Stato</th>
-                  <th className="text-left py-3 px-3 font-medium">Sentiment</th>
-                  <th className="text-left py-3 px-3 font-medium">Durata</th>
-                  <th className="text-right py-3 px-3 font-medium">Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recentCalls.map((call) => (
-                  <tr
-                    key={call.id}
-                    className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="py-3 px-3 text-zinc-300 capitalize">
-                      {call.direction}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 ${
-                          call.status === "completed"
-                            ? "text-emerald-400"
-                            : call.status === "failed"
-                              ? "text-red-400"
-                              : "text-amber-400"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            call.status === "completed"
-                              ? "bg-emerald-500"
-                              : call.status === "failed"
-                                ? "bg-red-500"
-                                : "bg-amber-500"
-                          }`}
-                        />
+      {/* Recent Calls */}
+      <div className="overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+        <div className="flex items-center justify-between border-b border-outline-variant/20 bg-surface-container-lowest px-6 py-4">
+          <h3 className="text-base font-semibold text-on-surface">Chiamate Recenti</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-outline-variant/20 bg-surface-container-low text-xs text-on-surface-variant">
+                <th className="px-5 py-3 font-medium">Direzione</th>
+                <th className="px-5 py-3 font-medium">Stato</th>
+                <th className="px-5 py-3 font-medium">Sentiment</th>
+                <th className="px-5 py-3 font-medium">Durata</th>
+                <th className="px-5 py-3 text-right font-medium">Data</th>
+              </tr>
+            </thead>
+            <tbody className="text-on-surface">
+              {data.recentCalls.length === 0 ? (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-on-surface-variant">Nessuna chiamata</td></tr>
+              ) : (
+                data.recentCalls.map((call) => (
+                  <tr key={call.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low/50 transition-colors">
+                    <td className="px-5 py-3 capitalize">{call.direction}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        call.status === "completed" ? "bg-green-50 text-green-700" :
+                        call.status === "failed" ? "bg-red-50 text-red-700" : "bg-yellow-50 text-yellow-700"
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          call.status === "completed" ? "bg-green-500" : call.status === "failed" ? "bg-red-500" : "bg-yellow-500"
+                        }`} />
                         {call.status}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-zinc-400">
-                      {call.sentiment || "N/A"}
+                    <td className="px-5 py-3">{call.sentiment || "N/A"}</td>
+                    <td className="px-5 py-3 font-mono text-on-surface-variant">
+                      {call.durationMs ? `${Math.round(call.durationMs / 1000)}s` : "-"}
                     </td>
-                    <td className="py-3 px-3 text-zinc-500 font-mono">
-                      {call.durationMs
-                        ? `${Math.round(call.durationMs / 1000)}s`
-                        : "-"}
-                    </td>
-                    <td className="py-3 px-3 text-right text-zinc-600">
+                    <td className="px-5 py-3 text-right text-on-surface-variant">
                       {new Date(call.createdAt).toLocaleDateString("it-IT")}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border px-5 py-4 ${
-        accent
-          ? "border-blue-500/10 bg-blue-500/[0.03]"
-          : "border-white/[0.06] bg-white/[0.02]"
-      }`}
-    >
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-        {label}
-      </p>
-      <p
-        className={`mt-2 text-2xl font-semibold tracking-tight ${
-          accent ? "text-blue-400" : "text-white"
-        }`}
-      >
-        {value}
-      </p>
     </div>
   );
 }

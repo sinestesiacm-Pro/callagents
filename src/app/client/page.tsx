@@ -19,51 +19,21 @@ export default function ClientPage() {
 - Basta UNA FOTO alla fattura per registrare tutto automaticamente
 - Controlla cosa hai in magazzino, eviti sprechi e perdite
 - Risparmi TEMPO (niente data entry manuale) E DENARO (meno sprechi, controllo reale)
-- Sito: https://martinezsoluzioni.com
 
-Obiettivo chiamata: fissare un appuntamento DI PERSONA con Carlos (il titolare).`);
-    setInstructions(`TONO: Cordiale, educato, da persona che chiama per aiutare, NON per vendere subito. PARLA con calma, fai UNA domanda alla volta. Non essere invadente.
+Obiettivo: fissare appuntamento DI PERSONA con Carlos.`);
+    setInstructions(`IL TUO NOME: Andrea. TONO: Cordiale, educato. PARLA con calma, UNA domanda alla volta.
 
-IL TUO NOME: Andrea. Presentati come Andrea di Martinez Soluzioni.
+APERTURA: "Buongiorno, parlo con il titolare? Mi chiamo Andrea di Martinez Soluzioni. La disturbo?" → Aspetta. → "Lavoriamo con ristoranti e molti hanno problemi con l'inventario. Posso farle una domanda veloce?"
 
-IDENTIFICA IL GENERE DEL CLIENTE: se e uomo usa "Signor", se e donna "Signora". In base al nome o alla voce.
+DOMANDE (una alla volta):
+1. "Come gestite l'inventario oggi?"
+2. "Quanto tempo vi porta via?"
+3. "Avete mai perso prodotti per mancanza di controllo?"
 
-APERTURA (30 secondi, IMPORTANTE: prima conosci, POI proponi):
-"Buongiorno, parlo con il titolare del ristorante? Mi chiamo Andrea, chiamo da Martinez Soluzioni. La disturbo?"
-→ Aspetta risposta.
-→ "Guardi, la chiamo perche lavoriamo con diversi ristoranti e ho visto che molti hanno lo stesso problema con la gestione dell'inventario. Volevo solo capire se anche per voi e una cosa che vi porta via tempo. Posso farle una domanda veloce?"
+PRODOTTO (solo dopo le risposte): "Abbiamo un'app dove fa una foto alla fattura e registra tutto in automatico. Carlos, il nostro esperto, puo passare di persona a farle vedere come funziona. Senza impegno."
 
-DOMANDE (UNA alla volta, aspetta la risposta. NON parlare del prodotto finche non hai capito il loro problema):
-1. "Come gestite l'inventario oggi? Usate carta, Excel, qualche software?"
-2. (Se dicono che e un problema) "Ah ecco, lo sento spesso. Quanto tempo vi porta via ogni settimana?"
-3. "Le e mai capitato di perdere prodotti o fare ordini sbagliati perche non avevate il controllo?"
-
-SOLO DOPO queste risposte, introduci il prodotto con NATURALEZZA:
-"Guardi, proprio per questo abbiamo creato una soluzione molto semplice: un'app dove fa una foto alla fattura e registra tutto in automatico. Niente piu data entry. Se vuole, Carlos, il nostro esperto, puo passare personalmente al suo ristorante per farle vedere come funziona su misura per lei. Senza impegno. Che ne dice?"
-
-OBIEZIONI:
-- "Uso gia un software" → "Ah bene, e contento? Funziona bene o le porta via tempo lo stesso?"
-- "Non ho tempo" → "Lo capisco benissimo. Pero mi dica solo: l'inventario e una cosa che vi pesa o no?"
-- "Non mi interessa" → "Nessun problema, la ringrazio comunque per il tempo. Le lascio il sito martinezsoluzioni.com. Buona giornata!"
-
-CHIUSURA: obiettivo = appuntamento DI PERSONA con Carlos.
-- Se interessato: "Allora se le va fissiamo un appuntamento: Carlos passa da lei, le fa vedere tutto di persona. Che giorno le andrebbe bene?"
-- Se titubante: "Guardi, provare non costa niente. Carlos viene, le mostra in 10 minuti e poi decide lei. Se non le interessa, nessun problema. Che ne dice?"
-
-QUANDO PRENDI UN APPUNTAMENTO DI PERSONA:
-- RIPETI data e ora: "Quindi confermiamo che Carlos passa da lei [giorno] alle [ora], giusto?"
-- Chiedi l'indirizzo del ristorante (NON solo email): "Mi lascia l'indirizzo del ristorante cosi Carlos sa dove venire?"
-- Poi chiedi email per la conferma scritta.
-
-QUANDO CONFERMI EMAIL (MOLTO IMPORTANTE):
-- I NUMERI si pronunciano come CIFRE, NON lettera per lettera:
-  Esempio: "0204" si dice "zero due zero quattro"
-  MAI dire "zeta-erre-o..." per i numeri.
-- Solo la parte con le lettere (@gmail.com) va detta lettera per lettera.
-- Esempio completo: "zero due zero quattro chiocciola gmail punto com. Corretto?"
-- Fai la conferma e aspetta che il cliente dica si o no. Se dice no, chiedi di ripetere.
-
-NON PARLARE TROPPO. Ascolta piu di quanto parli. MAI dire subito "ho un'app fantastica". Prima fai parlare loro.`);
+CHIUSURA: appuntamento DI PERSONA con Carlos.
+EMAIL: pronuncia i NUMERI come cifre ("0204" = "zero due zero quattro"), MAI lettera per lettera.`);
   }
 
   async function handleCall() {
@@ -97,7 +67,7 @@ NON PARLARE TROPPO. Ascolta piu di quanto parli. MAI dire subito "ho un'app fant
 
   async function handleHangup() {
     if (!callId) return;
-    setMessage("Chiusura chiamata...");
+    setMessage("Chiusura in corso...");
     try {
       await fetch("/api/calls/hangup", {
         method: "POST",
@@ -131,202 +101,194 @@ NON PARLARE TROPPO. Ascolta piu di quanto parli. MAI dire subito "ho un'app fant
         setAiResult("Errore: " + (data.error || "sconosciuto"));
       }
     } catch (e) {
-      setAiResult(
-        "Errore: " + (e instanceof Error ? e.message : "connessione")
-      );
+      setAiResult("Errore: " + (e instanceof Error ? e.message : "connessione"));
     }
     setStatus("idle");
   }
 
-  const statusColors: Record<string, string> = {
-    idle: "",
-    calling: "border-blue-500/30 bg-blue-500/5 text-blue-400",
-    success: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
-    error: "border-red-500/30 bg-red-500/5 text-red-400",
-    ai_loading: "border-purple-500/30 bg-purple-500/5 text-purple-400",
-  };
-
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Nuova Chiamata</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          L&apos;agente Marco chiamerà il numero e seguirà le tue istruzioni.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Main call card */}
-        <div className="lg:col-span-3 space-y-5">
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-zinc-300">
-                Dati chiamata
-              </h2>
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 p-margin-desktop md:flex-row">
+      {/* Left: Call Panel */}
+      <div className="flex w-full flex-col gap-6 md:w-2/3">
+        <section className="flex flex-col gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-sm">
+          <header className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-xl font-semibold text-on-surface">
+              <span className="material-symbols-outlined text-primary">phone_in_talk</span>
+              Dati Chiamata
+            </h2>
+            <span className="rounded-full bg-secondary-container px-3 py-1 text-xs font-medium text-on-secondary-container">
+              Agente Pronto
+            </span>
+          </header>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-on-surface-variant">
+                Numero di Telefono
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline">
+                  dialpad
+                </span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+393899163911"
+                  disabled={status === "calling" || status === "success"}
+                  className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 pl-9 pr-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-on-surface-variant">
+                Preset Rapido
+              </label>
               <button
                 onClick={applyRestaurantPreset}
-                className="text-[11px] px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-colors font-medium"
+                className="flex items-center justify-center gap-2 rounded-full bg-primary-container/20 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary-container/30 transition-colors"
               >
-                Preset Ristoranti
+                <span className="material-symbols-outlined text-[18px]">restaurant</span>
+                Ristoranti
               </button>
             </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
-                Numero di telefono
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+393899163911"
-                disabled={status === "calling" || status === "success"}
-                className="mt-2 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none focus:ring-0 disabled:opacity-40 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
-                Contesto
-              </label>
-              <textarea
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder="Informazioni sul cliente, settore, esigenze..."
-                rows={3}
-                disabled={status === "calling" || status === "success"}
-                className="mt-2 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none focus:ring-0 disabled:opacity-40 transition-colors resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
-                Istruzioni personalizzate
-              </label>
-              <textarea
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Tono, strategia, obiezioni specifiche..."
-                rows={3}
-                disabled={status === "calling" || status === "success"}
-                className="mt-2 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none focus:ring-0 disabled:opacity-40 transition-colors resize-none"
-              />
-            </div>
-
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-on-surface-variant">
+              Contesto della Chiamata
+            </label>
+            <textarea
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Es: Il cliente ha un ristorante a Milano, 30 coperti..."
+              rows={3}
+              disabled={status === "calling" || status === "success"}
+              className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 px-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50 resize-none"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-on-surface-variant">
+              Istruzioni per l&apos;Agente AI
+            </label>
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Sii cortese, non insistere, fissa un appuntamento..."
+              rows={2}
+              disabled={status === "calling" || status === "success"}
+              className="w-full rounded-lg border border-outline-variant bg-surface py-2.5 px-3 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow disabled:opacity-50 resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
             {status === "success" ? (
-              <div className="flex gap-3">
+              <>
                 <button
                   onClick={handleHangup}
-                  className="flex-1 rounded-xl bg-red-500/10 border border-red-500/20 py-3 text-sm font-medium text-red-400 hover:bg-red-500/20 transition-colors"
+                  className="rounded-full bg-error px-6 py-3 text-sm font-semibold text-on-error hover:opacity-90 transition-all active:scale-[0.98]"
                 >
                   Chiudi Chiamata
                 </button>
                 <button
-                  onClick={() => {
-                    setStatus("idle");
-                    setCallId(null);
-                    setMessage("");
-                  }}
-                  className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  onClick={() => { setStatus("idle"); setCallId(null); setMessage(""); }}
+                  className="rounded-full border border-outline-variant px-6 py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                 >
                   Nuova
                 </button>
-              </div>
+              </>
             ) : (
               <button
                 onClick={handleCall}
                 disabled={!phone.trim() || status === "calling"}
-                className="w-full rounded-xl bg-white py-3.5 text-sm font-semibold text-black hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.99]"
+                className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm"
               >
+                <span className="material-symbols-outlined text-[20px]">call</span>
                 {status === "calling" ? "Chiamando..." : "Chiama Ora"}
               </button>
             )}
           </div>
+        </section>
 
-          {message && (
-            <div
-              className={`rounded-xl border p-4 text-sm ${statusColors[status]}`}
-            >
-              <p className="font-medium">{message}</p>
-              {callId && (
-                <p className="text-[11px] mt-1 opacity-50 font-mono">
-                  {callId}
-                </p>
-              )}
+        {message && (
+          <div
+            className={`rounded-xl border p-4 text-sm ${
+              status === "success"
+                ? "border-green-200 bg-green-50 text-green-800"
+                : status === "error"
+                  ? "border-red-200 bg-red-50 text-red-800"
+                  : "border-blue-100 bg-blue-50 text-blue-800"
+            }`}
+          >
+            <p className="font-medium">{message}</p>
+            {callId && <p className="mt-1 font-mono text-[11px] opacity-60">{callId}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Right: AI + Info */}
+      <div className="flex w-full flex-col gap-6 md:w-1/3">
+        <section className="relative flex flex-col gap-4 overflow-hidden rounded-xl border border-outline-variant/10 bg-gradient-to-br from-surface-container-low to-surface-container-highest p-5 shadow-sm">
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary-container/30 blur-3xl" />
+          <header className="z-10 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary shadow-sm">
+              <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-on-surface">Assistente IA</h3>
+              <p className="text-xs text-on-surface-variant">Generazione dinamica</p>
+            </div>
+          </header>
+          <textarea
+            value={aiQuery}
+            onChange={(e) => setAiQuery(e.target.value)}
+            placeholder="Descrivi il settore e l'IA genera un pitch..."
+            rows={3}
+            className="z-10 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest/80 py-2.5 px-3 text-sm text-on-surface placeholder:text-outline focus:border-primary/30 focus:ring-1 focus:ring-primary/10 outline-none transition-colors resize-none backdrop-blur-sm"
+          />
+          <button
+            onClick={handleAiSearch}
+            disabled={!aiQuery.trim() || status === "ai_loading"}
+            className="z-10 flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">magic_button</span>
+            {status === "ai_loading" ? "Generando..." : "Genera Contesto"}
+          </button>
+          {aiResult && (
+            <div className="z-10 rounded-lg border border-outline-variant/20 bg-surface-container-lowest/80 p-4 backdrop-blur-sm">
+              <p className="mb-2 text-[11px] text-outline">Risultato:</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed whitespace-pre-wrap">
+                {aiResult}
+              </p>
+              <button
+                onClick={() => setContext(aiResult)}
+                className="mt-3 text-[11px] font-medium text-primary hover:underline"
+              >
+                Usa come contesto
+              </button>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Right column */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* AI assistant */}
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-4">
-            <h2 className="text-sm font-medium text-zinc-300">
-              Assistente IA
-            </h2>
-            <textarea
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              placeholder="Descrivi il settore o il prodotto e l'IA genera un pitch..."
-              rows={3}
-              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none focus:ring-0 transition-colors resize-none"
-            />
-            <button
-              onClick={handleAiSearch}
-              disabled={!aiQuery.trim() || status === "ai_loading"}
-              className="w-full rounded-xl border border-purple-500/20 bg-purple-500/5 py-2.5 text-sm font-medium text-purple-400 hover:bg-purple-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              {status === "ai_loading" ? "Generando..." : "Genera Contesto"}
-            </button>
-            {aiResult && (
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                <p className="text-[11px] text-zinc-500 mb-2">Risultato:</p>
-                <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                  {aiResult}
-                </p>
-                <button
-                  onClick={() => setContext(aiResult)}
-                  className="mt-3 text-[11px] text-purple-400 hover:text-purple-300 transition-colors"
-                >
-                  Usa come contesto
-                </button>
+        <section className="overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+          <header className="border-b border-outline-variant/20 bg-surface-container px-5 py-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">info</span>
+              Info Agente
+            </h3>
+          </header>
+          <div className="divide-y divide-outline-variant/10">
+            {[
+              ["Modello Vocale", "11labs-Andrea"],
+              ["Lingua", "Italiano (it-IT)"],
+              ["Agente", "Andrea · Outbound Sales"],
+              ["Framework", "SPIN + BANT"],
+              ["Numero", "+19129158944"],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between px-5 py-3 text-sm hover:bg-surface-container-low transition-colors">
+                <span className="text-on-surface-variant">{label}</span>
+                <span className="font-mono text-[13px] text-on-surface">{value}</span>
               </div>
-            )}
+            ))}
           </div>
-
-          {/* Info card */}
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-            <h3 className="text-sm font-medium text-zinc-300 mb-4">Info</h3>
-            <div className="space-y-3 text-xs text-zinc-400">
-              <div className="flex justify-between">
-                <span>Numero</span>
-                <span className="font-mono text-zinc-300">+19129158944</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Voce</span>
-                <span className="text-zinc-300">11labs-Andrea</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Agente</span>
-                <span className="text-zinc-300">Andrea · Outbound</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Lingua</span>
-                <span className="text-zinc-300">Italiano</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Framework</span>
-                <span className="text-zinc-300">SPIN + BANT</span>
-              </div>
-              <hr className="border-white/[0.06]" />
-              <p className="text-[11px] text-zinc-500 leading-relaxed">
-                Le istruzioni personalizzate hanno priorità massima nel prompt.
-                Puoi controllare tono, strategia, obiezioni e comportamento
-                dell&apos;agente.
-              </p>
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

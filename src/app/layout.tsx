@@ -24,14 +24,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white font-sans">
-        <Nav />
-        <main className="flex-1">{children}</main>
-      </body>
-    </html>
+      <html lang="it" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+        <head>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          />
+        </head>
+        <body className="min-h-full flex flex-col bg-surface text-on-surface font-sans">
+          <Nav />
+          <main className="flex-1">{children}</main>
+        </body>
+      </html>
   );
 }
