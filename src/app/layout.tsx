@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CallAgents · Martinez Soluzioni",
-  description: "Sistema multi-agente di chiamate automatiche",
+  title: "N-tropy Call · Martinez Soluzioni",
+  description: "Sistema multi-agente di chiamate automatiche N-tropy Call",
 };
 
 export default function RootLayout({

@@ -26,7 +26,7 @@ export default function Nav() {
       <nav className="sticky top-0 z-50 border-b border-outline-variant/30 bg-surface/90 backdrop-blur-md shadow-sm">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-8 max-w-7xl">
           <Link href="/client" className="text-xl font-bold text-primary tracking-tight shrink-0">
-            CallAgents
+            N-tropy Call
           </Link>
 
           {/* Desktop nav */}
@@ -108,7 +108,7 @@ export default function Nav() {
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/20">
-          <span className="text-lg font-bold text-primary">CallAgents</span>
+          <span className="text-lg font-bold text-primary">N-tropy Call</span>
           <button
             onClick={() => setOpen(false)}
             className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-container-low transition-colors"

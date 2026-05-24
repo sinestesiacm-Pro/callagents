@@ -35,7 +35,7 @@ export default function LoginPage() {
         className="bg-gray-800 p-8 rounded-xl border border-gray-700 w-full max-w-sm space-y-4"
       >
         <h1 className="text-xl font-bold text-white text-center">
-          CallAgents Login
+          N-tropy Call Login
         </h1>
         <div>
           <label className="text-xs text-gray-400 block mb-1">Email</label>

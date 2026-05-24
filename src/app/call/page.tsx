@@ -82,7 +82,7 @@ export default function CallPage() {
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">CallAgents</h1>
+          <h1 className="text-2xl font-bold">N-tropy Call</h1>
           <p className="text-gray-400 text-sm mt-1">Make an outbound sales call</p>
           <p className="text-gray-500 text-xs mt-1">From: +19129158944</p>
         </div>

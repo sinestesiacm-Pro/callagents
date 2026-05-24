@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLang } from "@/components/LanguageProvider";
 import { t } from "@/lib/i18n";
 import { presets } from "@/lib/presets";
+import { CallAnimation } from "@/components/CallAnimation";
 
 export default function ClientPage() {
   const { lang } = useLang();
@@ -129,26 +130,40 @@ export default function ClientPage() {
 
           <div className="flex justify-end gap-3">
             {status === "success" ? (
-              <>
-                <button onClick={handleHangup} className="rounded-full bg-error px-6 py-3 text-sm font-semibold text-on-error hover:opacity-90 transition-all active:scale-[0.98]">{t(lang, "client.hangup")}</button>
-                <button onClick={() => { setStatus("idle"); setCallId(null); setMessage(""); }} className="rounded-full border border-outline-variant px-6 py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors">{t(lang, "client.new")}</button>
-              </>
+              <button onClick={() => { setStatus("idle"); setCallId(null); setMessage(""); setActivePreset(null); }}
+                className="rounded-full border border-outline-variant px-6 py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
+                {t(lang, "client.new")}
+              </button>
+            ) : status === "calling" ? (
+              <button disabled className="flex items-center gap-2 rounded-full bg-primary/50 px-8 py-3 text-sm font-semibold text-on-primary cursor-wait">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                {t(lang, "client.calling")}
+              </button>
             ) : (
-              <button onClick={handleCall} disabled={!phone.trim() || status === "calling"}
+              <button onClick={handleCall} disabled={!phone.trim()}
                 className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm">
                 <span className="material-symbols-outlined text-[20px]">call</span>
-                {status === "calling" ? t(lang, "client.calling") : t(lang, "client.call")}
+                {t(lang, "client.call")}
               </button>
             )}
           </div>
         </section>
 
-        {message && (
-          <div className={`rounded-xl border p-4 text-sm ${status === "success" ? "border-green-200 bg-green-50 text-green-800" : status === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-blue-100 bg-blue-50 text-blue-800"}`}>
+        {status === "calling" || status === "success" ? (
+          <div className="rounded-2xl border border-white/10 bg-surface-container-lowest/90 backdrop-blur-xl p-6 shadow-lg">
+            <CallAnimation phone={phone} />
+            <div className="flex justify-center mt-4">
+              <button onClick={handleHangup} className="rounded-full border border-red-200 bg-red-50 px-8 py-3 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors active:scale-[0.98]">
+                {t(lang, "client.hangup")}
+              </button>
+            </div>
+          </div>
+        ) : message ? (
+          <div className={`rounded-xl border p-4 text-sm ${status === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-blue-100 bg-blue-50 text-blue-800"}`}>
             <p className="font-medium">{message}</p>
             {callId && <p className="mt-1 font-mono text-[11px] opacity-60">{callId}</p>}
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex w-full flex-col gap-6 md:w-1/3">
